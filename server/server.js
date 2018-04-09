@@ -1,42 +1,24 @@
-const mongoose = require('mongoose');
+const express  = require('express');
+const bodyParser = require('body-parser');
 
-mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://localhost:27017/TodoApp');
+const { mongoose } = require('./db/mongoose');
+const { Todo } = require('./models/todo');
+const { User } = require('./models/user');
 
-let Todo = mongoose.model('Todo', {
-    text: {
-        type: String
-    },
-    complited: {
-        type: Boolean
-    },
-    createdAy: {
-        type: Number
-    }
+const app = new express();
+
+app.use(bodyParser.json());
+
+app.post('/todos', (req, res) => {
+    let todo = new Todo({
+        text: req.body.text
+    });
+
+    todo.save()
+        .then(doc => res.send(doc))
+        .catch(e => res.status(400).send(e));
 });
 
-let Users = mongoose.model('Users', {
-    email: {
-        type: String,
-        required: true,
-        trim: true,
-        minlength: 1
-    },
-    name: {
-        type: String,
-        trim: true,
-        default: null
-    }
+app.listen(3000, () => {
+    console.log('Started on port 3000');
 });
-
-// let newTodo = new Todo({
-//     text: 'Finish my work!',
-//     complited: false,
-//     createdAy: 123
-// });
-
-let newUser = new Users({
-    email: ' a250188@yandex.ru '
-});
-
-newUser.save().then(result => console.log(JSON.stringify(result, undefined, 2))).catch(e => console.error(`Unbale to save ${e}`));
