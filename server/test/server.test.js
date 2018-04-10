@@ -8,8 +8,20 @@ const {
     Todo
 } = require('./../models/todo');
 
+let seed = () => {
+    let seedArray = [];
+    for (let i = 0; i <= 5; i++) {
+        seedArray.push({
+            text: `This is seed item #${i}`
+        });
+    }
+    return seedArray;
+}
+
 beforeEach((done) => {
-    Todo.remove({}).then(() => done());
+    Todo.remove({}).then(() => {
+        return Todo.insertMany(seed());
+    }).then(() => done());
 });
 
 describe('POST /todos', () => {
@@ -31,8 +43,8 @@ describe('POST /todos', () => {
                 }
 
                 Todo.find().then((todos) => {
-                    expect(todos.length).toBe(1);
-                    expect(todos[0].text).toBe(text);
+                    expect(todos.length).toBe(seed().length + 1);
+                    expect(todos[seed().length].text).toBe(text);
                     done();
                 }).catch(e => done(e));
             })
@@ -49,9 +61,21 @@ describe('POST /todos', () => {
                 }
 
                 Todo.find().then((todos) => {
-                    expect(todos.length).toBe(0);
+                    expect(todos.length).toBe(seed().length);
                     done();
                 }).catch(e => done(e));
             });
+    });
+});
+
+describe('GET /todos', () => {
+    it('should get all todos from database', (done) => {
+        request(app)
+            .get('/todos')
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.todos.length).toBe(seed().length);
+            })
+            .end(done);
     });
 });
