@@ -20,9 +20,9 @@ let seed = () => {
 
 beforeEach((done) => {
     Todo.remove({}).then(() => {
-        return Todo.insertMany(seed());
+      Todo.insertMany(seed());
     }).then(() => done());
-});
+  });
 
 describe('POST /todos', () => {
     it('should create a new todo', (done) => {
