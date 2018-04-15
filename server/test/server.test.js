@@ -1,5 +1,6 @@
 const expect = require('expect');
 const request = require('supertest');
+const { ObjectID } = require('mongodb');
 
 const {
     app
@@ -8,21 +9,26 @@ const {
     Todo
 } = require('./../models/todo');
 
-let seed = () => {
-    let seedArray = [];
-    for (let i = 0; i <= 5; i++) {
-        seedArray.push({
-            text: `This is seed item #${i}`
-        });
+const seed = [
+    {
+        _id: new ObjectID(),
+        text: `This is seed item #1`
+    },
+    {
+        _id: new ObjectID(),
+        text: `This is seed item #2`
+    },
+    {
+        _id: new ObjectID(),
+        text: `This is seed item #3`
     }
-    return seedArray;
-}
+];
 
 beforeEach((done) => {
     Todo.remove({}).then(() => {
-      Todo.insertMany(seed());
+        Todo.insertMany(seed);
     }).then(() => done());
-  });
+});
 
 describe('POST /todos', () => {
     it('should create a new todo', (done) => {
@@ -43,8 +49,8 @@ describe('POST /todos', () => {
                 }
 
                 Todo.find().then((todos) => {
-                    expect(todos.length).toBe(seed().length + 1);
-                    expect(todos[seed().length].text).toBe(text);
+                    expect(todos.length).toBe(seed.length + 1);
+                    expect(todos[seed.length].text).toBe(text);
                     done();
                 }).catch(e => done(e));
             })
@@ -61,7 +67,7 @@ describe('POST /todos', () => {
                 }
 
                 Todo.find().then((todos) => {
-                    expect(todos.length).toBe(seed().length);
+                    expect(todos.length).toBe(seed.length);
                     done();
                 }).catch(e => done(e));
             });
@@ -74,8 +80,35 @@ describe('GET /todos', () => {
             .get('/todos')
             .expect(200)
             .expect((res) => {
-                expect(res.body.todos.length).toBe(seed().length);
+                expect(res.body.todos.length).toBe(seed.length);
             })
+            .end(done);
+    });
+});
+
+describe('GET /todos/:id', () => {
+    it('should return doc', (done) => {
+        request(app)
+            .get(`/todos/${seed[0]._id.toHexString()}`)
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.text).toBe(seed[0].text);
+            })
+            .end(done);
+    });
+
+    it('should return 404 if _id is invalid', (done) => {
+        request(app)
+            .get('/todos/123')
+            .expect(404)
+            .end(done);
+    });
+
+    if('should return 404 if todo not found', (done) => {
+        const fakeId = new ObjectID();
+        request(app)
+            .get(`/todos/${fakeId.toHexString()}`)
+            .expect(404)
             .end(done);
     });
 });
