@@ -92,7 +92,7 @@ describe('GET /todos/:id', () => {
             .get(`/todos/${seed[0]._id.toHexString()}`)
             .expect(200)
             .expect((res) => {
-                expect(res.body.text).toBe(seed[0].text);
+                expect(res.body.todo.text).toBe(seed[0].text);
             })
             .end(done);
     });
@@ -129,7 +129,6 @@ describe('DELETE /todos/:id', () => {
                         expect(todo).toBeFalsy();
                         done();
                     }).catch(e => done(e));
-
             });
     });
 
@@ -146,5 +145,55 @@ describe('DELETE /todos/:id', () => {
             .delete(`/todos/${fakeId.toHexString()}`)
             .expect(404)
             .end(done);
+    });
+});
+
+describe('PATCH /todos/:id', () => {
+    it('should update todo', (done) => {
+        let hexId = seed[0]._id.toHexString();
+        let newText = 'New text for testing the PATCH method.'
+        request(app)
+            .patch(`/todos/${hexId}`)
+            .send({
+                text: newText,
+                complete: true,
+                completedAt: new Date()
+            })
+            .expect(200)
+            .end((err, res) => {
+                if (err) {
+                    return done(err);
+                }
+
+                Todo.findById(hexId)
+                    .then((todo) => {
+                        expect(todo.text).toBe(newText);
+                        done();
+                    }).catch(e => done(e));
+            });
+    });
+
+    it('should clear completedAt when todo is not completed', (done) => {
+        let hexId = seed[0]._id.toHexString();
+        request(app)
+            .patch(`/todos/${hexId}`)
+            .send({
+                complete: false,
+                completedAt: null
+            })
+            .expect(200)
+            .end((err, res) => {
+                if (err) {
+                    return done(err);
+                }
+
+                Todo.findById(hexId)
+                    .then((todo) => {
+                        expect(todo.complete).toBeFalsy();
+                        expect(todo.completedAt).toBeNull();
+                        done();
+                    })
+                    .catch(e => done(e));
+            });
     });
 });
