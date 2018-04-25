@@ -151,12 +151,12 @@ describe('DELETE /todos/:id', () => {
 describe('PATCH /todos/:id', () => {
     it('should update todo', (done) => {
         let hexId = seed[0]._id.toHexString();
-        let newText = 'New text for testing the PATCH method.'
+        let newText = 'New text for testing the PATCH method.';
         request(app)
             .patch(`/todos/${hexId}`)
             .send({
                 text: newText,
-                complete: true,
+                completed: true,
                 completedAt: new Date()
             })
             .expect(200)
@@ -168,6 +168,7 @@ describe('PATCH /todos/:id', () => {
                 Todo.findById(hexId)
                     .then((todo) => {
                         expect(todo.text).toBe(newText);
+                        expect(todo.completed).toBeTruthy();
                         done();
                     }).catch(e => done(e));
             });
@@ -178,7 +179,7 @@ describe('PATCH /todos/:id', () => {
         request(app)
             .patch(`/todos/${hexId}`)
             .send({
-                complete: false,
+                completed: false,
                 completedAt: null
             })
             .expect(200)
@@ -189,7 +190,7 @@ describe('PATCH /todos/:id', () => {
 
                 Todo.findById(hexId)
                     .then((todo) => {
-                        expect(todo.complete).toBeFalsy();
+                        expect(todo.completed).toBeFalsy();
                         expect(todo.completedAt).toBeNull();
                         done();
                     })
