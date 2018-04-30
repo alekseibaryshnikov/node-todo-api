@@ -1,10 +1,11 @@
-
 require('./../config/config.js');
 
 const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
-const { ObjectID } = require('mongodb');
+const {
+    ObjectID
+} = require('mongodb');
 
 const {
     mongoose
@@ -15,6 +16,7 @@ const {
 const {
     User
 } = require('./models/user');
+const {authenticate} = require('./middleware/authenticate');
 
 const app = new express();
 
@@ -49,13 +51,17 @@ app.get('/todos/:id', (req, res) => {
         return res.status(404).send();
     }
 
-    Todo.findOne({ _id })
+    Todo.findOne({
+            _id
+        })
         .then((todo) => {
             if (!todo) {
                 return res.status(404).send();
             }
 
-            res.status(200).send({ todo });
+            res.status(200).send({
+                todo
+            });
         })
         .catch(e => res.status(400).send());
 });
@@ -73,7 +79,9 @@ app.delete('/todos/:id', (req, res) => {
                 return res.status(404).send();
             }
 
-            res.status(200).send({ todo });
+            res.status(200).send({
+                todo
+            });
         })
         .catch(e => res.status(400).send());
 });
@@ -93,15 +101,40 @@ app.patch('/todos/:id', (req, res) => {
         body.completedAt = null;
     }
 
-    Todo.findByIdAndUpdate(id, { $set: body }, { new: true }).then((todo) => {
+    Todo.findByIdAndUpdate(id, {
+        $set: body
+    }, {
+        new: true
+    }).then((todo) => {
         if (!todo) {
             return res.status(404).send();
         }
 
-        res.send({ todo });
+        res.send({
+            todo
+        });
     }).catch((e) => {
         res.status(400).send();
     })
+});
+
+app.post('/user', (req, res) => {
+    let body = _.pick(req.body, [
+        'email',
+        'password',
+        'name',
+        'age',
+        'location'
+    ]);
+    let user = new User(body);
+    user.save()
+        .then(() => user.generateAuthToken())
+        .then(token => res.header('x-auth', token).send(user.toJSON()))
+        .catch(err => res.status(400).send(err));
+});
+
+app.get('/user/me', authenticate, (req, res) => {
+    res.send(req.user);
 });
 
 app.listen(port, () => {
