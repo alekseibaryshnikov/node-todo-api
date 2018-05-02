@@ -1,36 +1,33 @@
 const expect = require('expect');
 const request = require('supertest');
-const { ObjectID } = require('mongodb');
-
 const {
-    app
-} = require('./../server');
+    ObjectID
+} = require('mongodb');
+const {
+    populateTodos,
+    populateUsers,
+    todos,
+    users
+} = require('./seed/seed');
+const {
+    User
+} = require('./../models/user');
 const {
     Todo
 } = require('./../models/todo');
+const {
+    app
+} = require('./../server');
 
-const seed = [
-    {
-        _id: new ObjectID(),
-        text: `This is seed item #1`
-    },
-    {
-        _id: new ObjectID(),
-        text: `This is seed item #2`
-    },
-    {
-        _id: new ObjectID(),
-        text: `This is seed item #3`
-    }
-];
-
-beforeEach((done) => {
-    Todo.remove({}).then(() => {
-        Todo.insertMany(seed);
-    }).then(() => done());
-});
+beforeEach(populateTodos);
+beforeEach(populateUsers);
 
 describe('POST /todos', () => {
+    it('should take less than 500ms', function (done) {
+        this.timeout(500);
+        setTimeout(done, 300);
+    });
+
     it('should create a new todo', (done) => {
         let text = 'Test todo text';
 
