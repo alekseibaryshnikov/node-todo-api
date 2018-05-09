@@ -1,33 +1,15 @@
 const expect = require('expect');
 const request = require('supertest');
-const {
-    ObjectID
-} = require('mongodb');
-const {
-    populateTodos,
-    populateUsers,
-    todos,
-    users
-} = require('./seed/seed');
-const {
-    User
-} = require('./../models/user');
-const {
-    Todo
-} = require('./../models/todo');
-const {
-    app
-} = require('./../server');
+const { ObjectID } = require('mongodb');
+const { populateTodos, populateUsers, todos, users } = require('./seed/seed');
+const { User } = require('./../models/user');
+const { Todo } = require('./../models/todo');
+const { app } = require('./../server');
 
-beforeEach(populateTodos);
 beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 describe('POST /todos', () => {
-    it('should take less than 500ms', function (done) {
-        this.timeout(500);
-        setTimeout(done, 300);
-    });
-
     it('should create a new todo', (done) => {
         let text = 'Test todo text';
 
@@ -46,8 +28,8 @@ describe('POST /todos', () => {
                 }
 
                 Todo.find().then((todos) => {
-                    expect(todos.length).toBe(seed.length + 1);
-                    expect(todos[seed.length].text).toBe(text);
+                    expect(todos.length).toBe(todos.length);
+                    expect(todos[todos.length - 1].text).toBe(text);
                     done();
                 }).catch(e => done(e));
             })
@@ -64,7 +46,7 @@ describe('POST /todos', () => {
                 }
 
                 Todo.find().then((todos) => {
-                    expect(todos.length).toBe(seed.length);
+                    expect(todos.length).toBe(todos.length);
                     done();
                 }).catch(e => done(e));
             });
@@ -77,7 +59,7 @@ describe('GET /todos', () => {
             .get('/todos')
             .expect(200)
             .expect((res) => {
-                expect(res.body.todos.length).toBe(seed.length);
+                expect(res.body.todos.length).toBe(todos.length);
             })
             .end(done);
     });
@@ -86,10 +68,10 @@ describe('GET /todos', () => {
 describe('GET /todos/:id', () => {
     it('should return doc', (done) => {
         request(app)
-            .get(`/todos/${seed[0]._id.toHexString()}`)
+            .get(`/todos/${todos[0]._id.toHexString()}`)
             .expect(200)
             .expect((res) => {
-                expect(res.body.todo.text).toBe(seed[0].text);
+                expect(res.body.todo.text).toBe(todos[0].text);
             })
             .end(done);
     });
@@ -112,7 +94,7 @@ describe('GET /todos/:id', () => {
 
 describe('DELETE /todos/:id', () => {
     it('should delete todo', (done) => {
-        let hexId = seed[0]._id.toHexString();
+        let hexId = todos[0]._id.toHexString();
         request(app)
             .delete(`/todos/${hexId}`)
             .expect(200)
@@ -147,7 +129,7 @@ describe('DELETE /todos/:id', () => {
 
 describe('PATCH /todos/:id', () => {
     it('should update todo', (done) => {
-        let hexId = seed[0]._id.toHexString();
+        let hexId = todos[0]._id.toHexString();
         let newText = 'New text for testing the PATCH method.';
         request(app)
             .patch(`/todos/${hexId}`)
@@ -172,7 +154,7 @@ describe('PATCH /todos/:id', () => {
     });
 
     it('should clear completedAt when todo is not completed', (done) => {
-        let hexId = seed[0]._id.toHexString();
+        let hexId = todos[0]._id.toHexString();
         request(app)
             .patch(`/todos/${hexId}`)
             .send({
@@ -188,10 +170,84 @@ describe('PATCH /todos/:id', () => {
                 Todo.findById(hexId)
                     .then((todo) => {
                         expect(todo.completed).toBeFalsy();
-                        expect(todo.completedAt).toBeNull();
+                        expect(todo.completedAt).toBe(null);
                         done();
                     })
                     .catch(e => done(e));
             });
+    });
+});
+
+describe('GET /users/me', () => {
+    it('should return user', (done) => {
+        request(app)
+            .get('/users/me')
+            .set('x-auth', users[0].tokens[0].token)
+            .expect(200)
+            .expect((res) => {
+                expect(res.body._id).toBe(users[0]._id.toHexString());
+                expect(res.body.email).toBe(users[0].email);
+            })
+            .end(done);
+    });
+
+    it('should return 401 code', (done) => {
+        request(app)
+            .get('/users/me')
+            .expect(401)
+            .expect((res) => {
+                expect(res.body).toEqual({});
+            })
+            .end(done);
+    });
+});
+
+describe('POST /users', () => {
+    it('should create new user', (done) => {
+        let email = 'testMail@testMail.ru';
+        let password = '123abc!';
+
+        request(app)
+            .post('/users')
+            .send({ email, password })
+            .expect(200)
+            .expect((res) => {
+                expect(res.headers['x-auth']).toBeTruthy();
+                expect(res.body._id).toBeTruthy();
+                expect(res.body.email).toBe(email);
+            })
+            .end((err) => {
+                if (err) {
+                    done(err);
+                }
+
+                User.findOne({ email })
+                    .then((user) => {
+                        expect(user).toBeTruthy();
+                        expect(user.password).not.toBe(password);
+                        done();
+                    });
+            });
+    });
+
+    it('should return validation error if request invalid', (done) => {
+        let email = 'not_email';
+        let password = '12345';
+        request(app)
+            .post('/users')
+            .send({email, password})
+            .expect(400)
+            .end(done);
+    });
+
+    it('should not create create user if email in use', (done) => {
+        let email = users[0].email;
+        let password = users[0].password;
+
+        request(app)
+            .post('/users')
+            .send({email, password})
+            .expect(400)
+            .end(done);
     });
 });
