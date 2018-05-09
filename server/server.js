@@ -135,8 +135,10 @@ app.post('/users/login', (req, res) => {
 
     User.findByCredentials(body.email, body.password)
         .then((user) => {
-            res.set('x-auth', user.tokens[0].token);
-            res.status(200).send(user);
+            return user.generateAuthToken()
+                .then((token) => {
+                    res.set('x-auth', token).status(200).send(token);
+                });
         })
         .catch(e => res.status(400).send());
 });
