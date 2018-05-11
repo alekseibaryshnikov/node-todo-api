@@ -15,6 +15,7 @@ describe('POST /todos', () => {
 
     request(app)
       .post('/todos')
+      .set('x-auth', users[0].tokens[0].token)
       .send({
         text
       })
@@ -38,6 +39,7 @@ describe('POST /todos', () => {
   it('should not create todo with invalid data', (done) => {
     request(app)
       .post('/todos')
+      .set('x-auth', users[0].tokens[0].token)
       .send({})
       .expect(400)
       .end((err, res) => {
@@ -57,9 +59,10 @@ describe('GET /todos', () => {
   it('should get all todos from database', (done) => {
     request(app)
       .get('/todos')
+      .set('x-auth', users[0].tokens[0].token)
       .expect(200)
       .expect((res) => {
-        expect(res.body.todos.length).toBe(todos.length);
+        expect(res.body.todos.length).toBe(2);
       })
       .end(done);
   });
@@ -69,6 +72,7 @@ describe('GET /todos/:id', () => {
   it('should return doc', (done) => {
     request(app)
       .get(`/todos/${todos[0]._id.toHexString()}`)
+      .set('x-auth', users[0].tokens[0].token)
       .expect(200)
       .expect((res) => {
         expect(res.body.todo.text).toBe(todos[0].text);
@@ -79,6 +83,7 @@ describe('GET /todos/:id', () => {
   it('should return 404 if _id is invalid', (done) => {
     request(app)
       .get('/todos/123')
+      .set('x-auth', users[0].tokens[0].token)
       .expect(404)
       .end(done);
   });
@@ -87,6 +92,7 @@ describe('GET /todos/:id', () => {
     const fakeId = new ObjectID();
     request(app)
       .get(`/todos/${fakeId.toHexString()}`)
+      .set('x-auth', users[0].tokens[0].token)
       .expect(404)
       .end(done);
   });
@@ -97,6 +103,7 @@ describe('DELETE /todos/:id', () => {
     let hexId = todos[0]._id.toHexString();
     request(app)
       .delete(`/todos/${hexId}`)
+      .set('x-auth', users[0].tokens[0].token)
       .expect(200)
       .end((err, res) => {
         if (err) {
@@ -114,6 +121,7 @@ describe('DELETE /todos/:id', () => {
   it('should return 404 if _id is invalid', (done) => {
     request(app)
       .delete('/todos/123')
+      .set('x-auth', users[0].tokens[0].token)
       .expect(404)
       .end(done);
   });
@@ -122,6 +130,7 @@ describe('DELETE /todos/:id', () => {
     const fakeId = new ObjectID();
     request(app)
       .delete(`/todos/${fakeId.toHexString()}`)
+      .set('x-auth', users[0].tokens[0].token)
       .expect(404)
       .end(done);
   });
@@ -133,6 +142,7 @@ describe('PATCH /todos/:id', () => {
     let newText = 'New text for testing the PATCH method.';
     request(app)
       .patch(`/todos/${hexId}`)
+      .set('x-auth', users[0].tokens[0].token)
       .send({
         text: newText,
         completed: true,
@@ -157,6 +167,7 @@ describe('PATCH /todos/:id', () => {
     let hexId = todos[0]._id.toHexString();
     request(app)
       .patch(`/todos/${hexId}`)
+      .set('x-auth', users[0].tokens[0].token)
       .send({
         completed: false,
         completedAt: null

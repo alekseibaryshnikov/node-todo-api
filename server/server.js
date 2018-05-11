@@ -1,25 +1,25 @@
 require('./../config/config.js');
 
 const _ = require('lodash');
-const express = require('express');
+const Express = require('express');
 const bodyParser = require('body-parser');
 const { ObjectID } = require('mongodb');
-const bcrypt = require('bcryptjs');
 
 const { mongoose } = require('./db/mongoose');
 const { Todo } = require('./models/todo');
 const { User } = require('./models/user');
 const { authenticate } = require('./middleware/authenticate');
 
-const app = new express();
+const app = new Express();
 
 const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
-app.post('/todos', (req, res) => {
-    let todo = new Todo({
-        text: req.body.text
+app.post('/todos', authenticate, (req, res) => {
+    const todo = new Todo({
+        text: req.body.text,
+        _created: req.user._id
     });
 
     todo.save()
@@ -27,17 +27,19 @@ app.post('/todos', (req, res) => {
         .catch(e => res.status(400).send(e));
 });
 
-app.get('/todos', (req, res) => {
-    Todo.find()
+app.get('/todos', authenticate, (req, res) => {
+    Todo.find({
+        _created: req.user._id
+    })
         .then((todos) => {
             res.status(200).send({
-                todos
+                todos,
             });
         })
         .catch(e => res.status(400).send(e));
 });
 
-app.get('/todos/:id', (req, res) => {
+app.get('/todos/:id', authenticate, (req, res) => {
     const _id = req.params.id;
 
     if (!ObjectID.isValid(_id)) {
@@ -53,13 +55,13 @@ app.get('/todos/:id', (req, res) => {
             }
 
             res.status(200).send({
-                todo
+                todo,
             });
         })
         .catch(e => res.status(400).send());
 });
 
-app.delete('/todos/:id', (req, res) => {
+app.delete('/todos/:id', authenticate, (req, res) => {
     const _id = req.params.id;
 
     if (!ObjectID.isValid(_id)) {
@@ -73,15 +75,15 @@ app.delete('/todos/:id', (req, res) => {
             }
 
             res.status(200).send({
-                todo
+                todo,
             });
         })
         .catch(e => res.status(400).send());
 });
 
-app.patch('/todos/:id', (req, res) => {
-    var id = req.params.id;
-    var body = _.pick(req.body, ['text', 'completed']);
+app.patch('/todos/:id', authenticate, (req, res) => {
+    let id = req.params.id;
+    let body = _.pick(req.body, ['text', 'completed']);
 
     if (!ObjectID.isValid(id)) {
         return res.status(404).send();
@@ -95,31 +97,31 @@ app.patch('/todos/:id', (req, res) => {
     }
 
     Todo.findByIdAndUpdate(id, {
-        $set: body
+        $set: body,
     }, {
-            new: true
+            new: true,
         }).then((todo) => {
             if (!todo) {
                 return res.status(404).send();
             }
 
             res.send({
-                todo
+                todo,
             });
         }).catch((e) => {
             res.status(400).send();
-        })
+        });
 });
 
 app.post('/users', (req, res) => {
-    let body = _.pick(req.body, [
+    const body = _.pick(req.body, [
         'email',
         'password',
         'name',
         'age',
-        'location'
+        'location',
     ]);
-    let user = new User(body);
+    const user = new User(body);
     user.save()
         .then(() => user.generateAuthToken())
         .then(token => res.header('x-auth', token).send(user.toJSON()))
@@ -131,15 +133,13 @@ app.get('/users/me', authenticate, (req, res) => {
 });
 
 app.post('/users/login', (req, res) => {
-    let body = _.pick(req.body, ['email', 'password']);
+    const body = _.pick(req.body, ['email', 'password']);
 
     User.findByCredentials(body.email, body.password)
-        .then((user) => {
-            return user.generateAuthToken()
-                .then((token) => {
-                    res.set('x-auth', token).status(200).send(token);
-                });
-        })
+        .then((user) => user.generateAuthToken()
+            .then((token) => {
+                res.set('x-auth', token).status(200).send(token);
+            }))
         .catch(e => res.status(400).send());
 });
 
@@ -166,5 +166,5 @@ app.listen(port, () => {
 });
 
 module.exports = {
-    app
+    app,
 };

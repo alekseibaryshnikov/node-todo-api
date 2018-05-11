@@ -3,21 +3,6 @@ const jwt = require('jsonwebtoken');
 const { Todo } = require('./../../models/todo');
 const { User } = require('./../../models/user');
 
-// Seed data for todo's
-const todos = [{
-    _id: new ObjectID(),
-    text: `This is seed item #1`
-},
-{
-    _id: new ObjectID(),
-    text: `This is seed item #2`
-},
-{
-    _id: new ObjectID(),
-    text: `This is seed item #3`
-}
-];
-
 // Seed data for user's
 const userFirstId = new ObjectID();
 const userTwendId = new ObjectID();
@@ -37,6 +22,24 @@ const users = [{
     _id: userTwendId,
     email: 'test2@test.ru',
     password: '123abc'
+}
+];
+
+// Seed data for todo's
+const todos = [{
+    _id: new ObjectID(),
+    text: `This is seed item #1`,
+    _created: userFirstId
+},
+{
+    _id: new ObjectID(),
+    text: `This is seed item #2`,
+    _created: userFirstId
+},
+{
+    _id: new ObjectID(),
+    text: `This is seed item #3`,
+    _created: userTwendId
 }
 ];
 
