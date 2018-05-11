@@ -132,7 +132,17 @@ describe('DELETE /todos/:id', () => {
       .delete(`/todos/${hexId}`)
       .set('x-auth', users[0].tokens[0].token)
       .expect(404)
-      .end(done);
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        Todo.findById(hexId)
+          .then((todo) => {
+            expect(todo).toBeTruthy();
+            done();
+          }).catch(e => done(e));
+      });
   });
 
   it('should return 404 if _id is invalid', (done) => {
@@ -192,7 +202,18 @@ describe('PATCH /todos/:id', () => {
         completedAt: new Date()
       })
       .expect(404)
-      .end(done);
+      .end((err, res) => {
+        if (err) {
+          return done(err);
+        }
+
+        Todo.findById(hexId)
+          .then((todo) => {
+            expect(todo.text).toBe(todos[2].text);
+            expect(todo.completed).toBeFalsy();
+            done();
+          }).catch(e => done(e));
+      });
   });
 
   it('should clear completedAt when todo is not completed', (done) => {
