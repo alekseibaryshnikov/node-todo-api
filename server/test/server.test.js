@@ -80,6 +80,14 @@ describe('GET /todos/:id', () => {
       .end(done);
   });
 
+  it('should not return doc for wrong user', (done) => {
+    request(app)
+      .get(`/todos/${todos[2]._id.toHexString()}`)
+      .set('x-auth', users[0].tokens[0].token)
+      .expect(404)
+      .end(done);
+  });
+
   it('should return 404 if _id is invalid', (done) => {
     request(app)
       .get('/todos/123')
@@ -116,6 +124,15 @@ describe('DELETE /todos/:id', () => {
             done();
           }).catch(e => done(e));
       });
+  });
+
+  it('should not delete todo for wrong user', (done) => {
+    let hexId = todos[2]._id.toHexString();
+    request(app)
+      .delete(`/todos/${hexId}`)
+      .set('x-auth', users[0].tokens[0].token)
+      .expect(404)
+      .end(done);
   });
 
   it('should return 404 if _id is invalid', (done) => {
@@ -161,6 +178,21 @@ describe('PATCH /todos/:id', () => {
             done();
           }).catch(e => done(e));
       });
+  });
+
+  it('should not update todo for wrong user', (done) => {
+    let hexId = todos[2]._id.toHexString();
+    let newText = 'New text for testing the PATCH method.';
+    request(app)
+      .patch(`/todos/${hexId}`)
+      .set('x-auth', users[0].tokens[0].token)
+      .send({
+        text: newText,
+        completed: true,
+        completedAt: new Date()
+      })
+      .expect(404)
+      .end(done);
   });
 
   it('should clear completedAt when todo is not completed', (done) => {
@@ -269,8 +301,8 @@ describe('POST /users/login', () => {
     request(app)
       .post('/users/login')
       .send({
-        email: users[1].email,
-        password: users[1].password
+        email: users[0].email,
+        password: users[0].password
       })
       .expect(200)
       .expect((res) => {
@@ -281,9 +313,9 @@ describe('POST /users/login', () => {
           return done(err);
         }
 
-        User.findById(users[1]._id)
+        User.findById(users[0]._id)
           .then((user) => {
-            expect(user.tokens[0]).toMatchObject({
+            expect(user.tokens[1]).toMatchObject({
               access: 'auth',
               token: res.headers['x-auth']
             });
@@ -297,8 +329,8 @@ describe('POST /users/login', () => {
     request(app)
       .post('/users/login')
       .send({
-        email: users[1].email + 'someString',
-        password: users[1].password + 'someString'
+        email: users[0].email + 'someString',
+        password: users[0].password + 'someString'
       })
       .expect(400)
       .expect((res) => {
@@ -309,9 +341,9 @@ describe('POST /users/login', () => {
           done(err);
         }
         
-        User.findById(users[1]._id)
+        User.findById(users[0]._id)
           .then((user) => {
-            expect(user.tokens.length).toBe(0);
+            expect(user.tokens.length).toBe(1);
             done();
           })
           .catch((e) => done(e));
