@@ -1,10 +1,11 @@
 const expect = require('expect');
 const request = require('supertest');
 const { ObjectID } = require('mongodb');
-const { populateTodos, populateUsers, todos, users } = require('./seed/seed');
+
+const { app } = require('./../server');
 const { User } = require('./../models/user');
 const { Todo } = require('./../models/todo');
-const { app } = require('./../server');
+const { populateTodos, populateUsers, todos, users } = require('./seed/seed');
 
 beforeEach(populateUsers);
 beforeEach(populateTodos);
